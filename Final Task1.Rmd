@@ -1,0 +1,97 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+**Getting and Clean Data**
+
+##TASK 1st##
+
+**Load all the packages**
+
+```{r, Warning = FALSE}
+library(dplyr)
+library(ggplot2)
+install.packages("readtext")
+require(readtext)
+library(sqldf)
+library(stringi)
+install.packages("quanteda")
+library(quanteda)
+```
+
+**1.loading the Data**
+
+```{r, Warning = FALSE}
+if(!file.exists("./data")){dir.create("./data")}
+fileUrl <- "https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip"
+download.file(fileUrl,destfile="./data/Coursera-SwiftKey.zip")
+```
+
+**unzipped the file**
+
+```{r, Warning = FALSE}
+unzip <- unzip(zipfile="./data/Coursera-SwiftKey.zip",exdir="./data")
+
+unzip
+```
+
+**Checking Data Connection**
+
+```{r, Warning = FALSE}
+con <- file("./data/final/en_US/en_US.twitter.txt", "r")
+twittertxt <- readLines(con,encoding = "UTF-8", skipNul = TRUE )
+con1 <- file("./data/final/en_US/en_US.blogs.txt", "r")
+blogstxt <- readLines(con1, encoding = "UTF-8", skipNul = TRUE)
+con2 <- file("./data/final/en_US/en_US.news.txt", "r")
+newstxt <- readLines(con2, encoding = "UTF-8", skipNul = TRUE)
+close(con)
+```
+
+**Explanation**
+
+I am using this data from the coursera Final Project. The whole purpose of this project is to predict the next word with the help of different model and by creating Shiny application.Let's began by checking no of lines, words and size of all three
+
+```{r, Warning = FALSE}
+sizeTwitter <- file.info("./data/final/en_US/en_US.twitter.txt")$size / 1024
+sizeblogs <- file.info("./data/final/en_US/en_US.blogs.txt")$size / 1024
+sizenews <- file.info("./data/final/en_US/en_US.news.txt")$size / 1024
+wordsTwitter <- stri_count_words("./data/final/en_US/en_US.twitter.txt")
+wordsblogs <- stri_count_words("./data/final/en_US/en_US.blogs.txt")
+wordsnews <- stri_count_words("./data/final/en_US/en_US.news.txt")
+data.frame(Source = c("Twitter", "News", "Blogs"),
+           SizeMB = c(sizeTwitter,sizeblogs,sizenews),
+           NoofLines = c(length(twittertxt),length(blogstxt), length(newstxt)),
+           NoOfWords = c(sum(wordsTwitter),sum(wordsblogs), sum(wordsnews)))
+```
+
+**2.Sampling**
+
+Merging all the Text file to create a sample data for prediction model.
+
+```{r, Warning = FALSE}
+set.seed(1200)
+if(!file.exists("mergedfile.txt")){
+  con <- file("mergedfile.txt", "r")
+  fulltext <- readLines(con, encoding = "UTF-8", skipNul = TRUE)
+  nlines <- length(fulltext)
+  close(con)
+  
+  con <- file("samplefile.txt", "w")
+  selection <- rbinom(nlines, 1, .1)
+  for(i in 1:nlines){
+    if(selection[i] == 1){
+      cat(fulltext[i], file = con, sep = "\n")
+    }
+  }
+  close(con)
+  paste(
+    "saved",
+    sum(selection),
+    "lines to file",
+    "sampledfile.txt"
+  )
+}
+mytf3 <- readLines("samplefile.txt", encoding = "UTF-8")
+mycorpus <- corpus(mytf3)
+```
